@@ -30,12 +30,12 @@ export default async function TopMenu() {
                         Sign-In
                     </Link>
                 )}
+                <TopMenuItem title="My Booking" href="/mybooking" />
             </div>
 
             {/* ขวา: Menu Navigation + Logo */}
             <div className="flex items-center gap-5">
                 {/* เพิ่มเมนู My Booking เข้าไปตรงนี้ */}
-                <TopMenuItem title="My Booking" href="/mybooking" />
                 
                 {/* เมนู Booking เดิม */}
                 <TopMenuItem title="Booking" href="/booking" />
