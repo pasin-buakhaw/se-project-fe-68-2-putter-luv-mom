@@ -2,14 +2,14 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { Calendar, MapPin, Trash2, Pencil, Check, X } from "lucide-react";
+import { Calendar, Trash2, Pencil, Check, X } from "lucide-react";
 import dayjs, { Dayjs } from "dayjs";
 import DateReserve from "@/components/DateReserve";
 import getReservations from "@/libs/getReservations";
 import updateReservation from "@/libs/updateReservation";
 import deleteReservation from "@/libs/deleteReservation";
 
-export default function BookingList() {
+export default function AdminBookingList() {
     const { data: session } = useSession()
     const [bookings, setBookings] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
@@ -55,15 +55,11 @@ export default function BookingList() {
     }
 
     if (loading) return (
-        <div className="text-center py-20">
-            <p className="text-gray-600 text-sm tracking-widest uppercase">Loading...</p>
-        </div>
+        <p className="text-gray-600 text-sm tracking-widest uppercase">Loading...</p>
     )
 
     if (bookings.length === 0) return (
-        <div className="text-center py-20">
-            <p className="text-gray-600 text-sm tracking-widest uppercase">No Reservations Found</p>
-        </div>
+        <p className="text-gray-600 text-sm tracking-widest uppercase">No Reservations Found</p>
     )
 
     return (
@@ -84,13 +80,13 @@ export default function BookingList() {
                             <div className="flex gap-2 justify-end">
                                 <button
                                     onClick={() => setEditingId(null)}
-                                    className="flex items-center gap-1.5 px-4 py-2 border border-gray-600 text-gray-400 hover:text-white text-xs tracking-widest uppercase transition"
+                                    className="flex items-center gap-1.5 px-4 py-2 border border-gray-600 text-gray-400 hover:text-white text-xs uppercase transition"
                                 >
                                     <X size={13} /> Cancel
                                 </button>
                                 <button
                                     onClick={() => handleSave(item._id)}
-                                    className="flex items-center gap-1.5 px-4 py-2 bg-yellow-500 text-black hover:bg-yellow-400 text-xs tracking-widest uppercase font-semibold transition"
+                                    className="flex items-center gap-1.5 px-4 py-2 bg-yellow-500 text-black text-xs uppercase font-semibold transition"
                                 >
                                     <Check size={13} /> Save
                                 </button>
@@ -106,11 +102,12 @@ export default function BookingList() {
                                     <Calendar size={12} className="text-yellow-600/60" />
                                     {dayjs(item.reservationDate).format("DD MMM YYYY HH:mm")}
                                 </div>
+                                {/* แสดง user ด้วย เพราะ admin เห็นทุก booking */}
+                                <div className="text-gray-600 text-xs">
+                                    User: {item.user?.name || item.user?.email || item.user}
+                                </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="text-yellow-600/60 text-xs tracking-widest uppercase border border-yellow-600/20 px-3 py-1">
-                                    Upcoming
-                                </span>
                                 <button
                                     onClick={() => { setEditingId(item._id); setEditDate(null) }}
                                     className="p-2 border border-yellow-600/30 text-yellow-600/60 hover:border-yellow-500 hover:text-yellow-500 transition"

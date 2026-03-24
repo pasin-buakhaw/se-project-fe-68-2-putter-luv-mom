@@ -1,18 +1,9 @@
-export default async function getVenue(vid: string){
+export default async function getVenue(vid: string) {
     const response = await fetch(
-        `https://a08-venue-explorer-backend.vercel.app/api/v1/venues/${vid}`
+        `https://project-bn-sorawat.vercel.app/api/v1/restaurants/${vid}`
     )
     if (!response.ok) {
-        throw new Error("Failed to fetch venue")
+        throw new Error("Failed to fetch restaurant")
     }
-    
-    const data = await response.json()
-
-    // แปลง URL จาก uc?id= → thumbnail?id=
-    data.data.picture = data.data.picture.replace(
-        /https:\/\/drive\.google\.com\/uc\?id=(.*)/,
-        'https://drive.google.com/thumbnail?id=$1'
-    )
-
-    return data
+    return await response.json()
 }

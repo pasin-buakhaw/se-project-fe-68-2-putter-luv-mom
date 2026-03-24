@@ -7,7 +7,7 @@ export const authOptions: AuthOptions = {
         strategy: "jwt"
     },
     pages: {
-        signIn: "/signin"  // เพิ่มบรรทัดนี้
+        signIn: "/signin"
     },
     providers: [
         CredentialsProvider({
@@ -22,10 +22,11 @@ export const authOptions: AuthOptions = {
                     const userResponse = await userLogIn(credentials.email, credentials.password)
                     if (userResponse && userResponse.token) {
                         return {
-                            id: userResponse._id,   
+                            id: userResponse._id,
                             name: userResponse.name,
                             email: userResponse.email,
                             token: userResponse.token,
+                            role: userResponse.role,  
                         }
                     }
                     return null

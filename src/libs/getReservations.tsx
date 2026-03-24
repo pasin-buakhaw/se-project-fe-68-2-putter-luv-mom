@@ -1,6 +1,6 @@
-export default async function getUserProfile(token: string) {
+export default async function getReservations(token: string) {
     const response = await fetch(
-        "https://project-bn-sorawat.vercel.app/api/v1/auth/me",
+        "https://project-bn-sorawat.vercel.app/api/v1/reservations",
         {
             method: "GET",
             headers: {
@@ -8,11 +8,9 @@ export default async function getUserProfile(token: string) {
                 Authorization: `Bearer ${token}`,
             },
         }
-    );
-
+    )
     if (!response.ok) {
-        throw new Error("Failed to get user profile");
+        throw new Error("Failed to fetch reservations")
     }
-
-    return await response.json();
+    return await response.json()
 }

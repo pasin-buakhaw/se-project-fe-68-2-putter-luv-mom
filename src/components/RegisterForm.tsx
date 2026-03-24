@@ -2,6 +2,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import userRegister from "@/libs/userRegister"
 
 export default function RegisterForm() {
     const router = useRouter()
@@ -38,26 +39,10 @@ export default function RegisterForm() {
 
         setLoading(true)
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/register`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: form.name,
-                    email: form.email,
-                    password: form.password,
-                    tel: form.tel,
-                }),
-            })
-
-            if (!res.ok) {
-                const data = await res.json()
-                setError(data.message || "Registration failed")
-                return
-            }
-
+            await userRegister(form.name, form.email, form.password, form.tel)
             router.push("/signin")
-        } catch (err) {
-            setError("Something went wrong. Please try again.")
+        } catch (err: any) {
+            setError(err.message || "Something went wrong. Please try again.")
         } finally {
             setLoading(false)
         }
@@ -87,7 +72,7 @@ export default function RegisterForm() {
                         placeholder="Enter your full name"
                         value={form.name}
                         onChange={handleChange}
-                        className="w-full bg-[#1a2235] border border-yellow-600/50  text-white 
+                        className="w-full bg-[#1a2235] border border-yellow-600/50 text-white 
                                    placeholder-gray-500 px-4 py-3 text-sm outline-none
                                    focus:border-yellow-500 transition-colors"
                     />
@@ -102,7 +87,7 @@ export default function RegisterForm() {
                         placeholder="Enter your email address"
                         value={form.email}
                         onChange={handleChange}
-                        className="w-full bg-[#1a2235] border border-yellow-600/50  text-white 
+                        className="w-full bg-[#1a2235] border border-yellow-600/50 text-white 
                                    placeholder-gray-500 px-4 py-3 text-sm outline-none
                                    focus:border-yellow-500 transition-colors"
                     />
@@ -119,7 +104,7 @@ export default function RegisterForm() {
                             placeholder="Create a secure password"
                             value={form.password}
                             onChange={handleChange}
-                            className="w-full bg-[#1a2235] border border-yellow-600/50  text-white 
+                            className="w-full bg-[#1a2235] border border-yellow-600/50 text-white 
                                        placeholder-gray-500 px-4 py-3 text-sm outline-none
                                        focus:border-yellow-500 transition-colors pr-12"
                         />
@@ -152,7 +137,7 @@ export default function RegisterForm() {
                         placeholder="Enter your phone number"
                         value={form.tel}
                         onChange={handleChange}
-                        className="w-full bg-[#1a2235] border border-yellow-600/50  text-white 
+                        className="w-full bg-[#1a2235] border border-yellow-600/50 text-white 
                                    placeholder-gray-500 px-4 py-3 text-sm outline-none
                                    focus:border-yellow-500 transition-colors"
                     />
