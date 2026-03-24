@@ -10,9 +10,9 @@ const venueImages: Record<string, string> = {
     'ร้านอาหารป่ามหาเฮง V99': '/img/restaurant1.jpg',
     'The Grand Palace Dining': '/img/restaurant2.jpg',
     'Sushiro Premium Zen': '/img/restaurant3.jpg',
-    'P-Pony Sweet Cafe': '/img/restaurant4.jpg',
-    'ครัวเจ๊ง้อ-สาขาต้นตำรับ': '/img/restaurant5.jpg',
-    'ครัวเจ๊ง้อ-สาขา2': '/img/restaurant6.jpg',
+    'Pony Sweet Cafe': '/img/restaurant4.jpg',
+    'ครัวเจ๊ง้อ สาขาต้นตำรับ': '/img/restaurant5.jpg',
+    'ครัวเจ๊ง้อ สาขา2': '/img/restaurant6.jpg',
 }
 
 export default async function VenueDetailPage({ params }: { params: Promise<{ vid: string }> }) {
