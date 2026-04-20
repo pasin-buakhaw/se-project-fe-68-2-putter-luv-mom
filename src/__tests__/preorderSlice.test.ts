@@ -91,3 +91,20 @@ describe('preorderSlice — extended actions', () => {
     expect(state.items[0].quantity).toBe(99)
   })
 })
+
+describe('preorderSlice — quantity bounds', () => {
+  const empty = { items: [] }
+  const item = { id: 'x', name: 'Test', price: 50, category: 'C', venueId: 'v1' }
+
+  it('updateQuantity enforces minimum of 1 (boundary test)', () => {
+    let state = preorderReducer(empty, addToPreorder(item))
+    state = preorderReducer(state, updateQuantity({ id: 'x', quantity: -5 }))
+    expect(state.items[0].quantity).toBe(1)
+  })
+
+  it('setQuantityBounded enforces min of 1 by default', () => {
+    let state = preorderReducer(empty, addToPreorder(item))
+    state = preorderReducer(state, { type: 'preorder/setQuantityBounded', payload: { id: 'x', quantity: 0 } })
+    expect(state.items[0].quantity).toBe(1)
+  })
+})
