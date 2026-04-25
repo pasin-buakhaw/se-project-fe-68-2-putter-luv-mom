@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import AuthButton from './AuthButton';
-import { AudioWaveform, UtensilsCrossed, CalendarPlus, CalendarCheck, BookOpen, MapPin } from 'lucide-react';
+import { AudioWaveform, UtensilsCrossed, CalendarPlus, CalendarCheck, BookOpen, MapPin, Search, Receipt } from 'lucide-react';
 
 export default function TopMenu() {
     return (
@@ -17,6 +17,22 @@ export default function TopMenu() {
 
                 {/* Nav */}
                 <div className="flex items-center gap-2">
+
+                    {/* Search */}
+                    <Link
+                        href="/search"
+                        className="group flex items-center gap-0 overflow-hidden
+                                   p-2 text-yellow-500 border border-yellow-500/50
+                                   hover:bg-yellow-500 hover:text-black
+                                   transition-all duration-300"
+                    >
+                        <Search size={16} />
+                        <span className="max-w-0 group-hover:max-w-[80px] overflow-hidden
+                                         whitespace-nowrap transition-all duration-300
+                                         text-xs font-medium group-hover:ml-2">
+                            Search
+                        </span>
+                    </Link>
 
                     {/* Restaurants */}
                     <Link
@@ -63,6 +79,22 @@ export default function TopMenu() {
                                          whitespace-nowrap transition-all duration-300
                                          text-xs font-medium group-hover:ml-2">
                             Menu
+                        </span>
+                    </Link>
+
+                    {/* Order History */}
+                    <Link
+                        href="/order-history"
+                        className="group flex items-center gap-0 overflow-hidden
+                                   p-2 text-yellow-500 border border-yellow-500/50
+                                   hover:bg-yellow-500 hover:text-black
+                                   transition-all duration-300"
+                    >
+                        <Receipt size={16} />
+                        <span className="max-w-0 group-hover:max-w-[120px] overflow-hidden
+                                         whitespace-nowrap transition-all duration-300
+                                         text-xs font-medium group-hover:ml-2">
+                            Order History
                         </span>
                     </Link>
 
