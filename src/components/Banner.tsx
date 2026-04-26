@@ -64,17 +64,29 @@ export default function Banner() {
                     Experience unparalleled luxury dining where every dish is a masterpiece
                 </p>
 
-                {/* Button */}
-                <button
-                    className="mt-2 text-xs font-medium px-8 py-3
-                               text-black bg-yellow-500
-                               hover:bg-yellow-400
-                               tracking-[0.3em] uppercase
-                               transition-all duration-300"
-                    onClick={() => router.push('/venue')}
-                >
-                    Select Restaurant
-                </button>
+                {/* Buttons */}
+                <div className="mt-2 flex items-center gap-4 flex-wrap justify-center">
+                    <button
+                        className="text-xs font-medium px-8 py-3
+                                   text-black bg-yellow-500
+                                   hover:bg-yellow-400
+                                   tracking-[0.3em] uppercase
+                                   transition-all duration-300"
+                        onClick={() => router.push('/search')}
+                    >
+                        Search Restaurant
+                    </button>
+                    <button
+                        className="text-xs font-medium px-8 py-3
+                                   text-yellow-500 bg-transparent border border-yellow-500/60
+                                   hover:bg-yellow-500/10
+                                   tracking-[0.3em] uppercase
+                                   transition-all duration-300"
+                        onClick={() => router.push('/booking')}
+                    >
+                        Book a Table
+                    </button>
+                </div>
             </div>
         </div>
     );
