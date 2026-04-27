@@ -4,7 +4,7 @@ import DateReserve from '@/components/DateReserve';
 import dayjs, { Dayjs } from 'dayjs';
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import getVenues from '@/libs/getVenues';
 import getReservations from '@/libs/getReservations';
 import createReservation from '@/libs/createReservation';
@@ -20,11 +20,12 @@ const RANKING_LIMIT: Record<string, number> = {
 export default function BookingClient() {
     const { data: session } = useSession()
     const router = useRouter()
+    const searchParams = useSearchParams()
     const { toast, showToast, hideToast } = useToast()
 
     const [restaurants, setRestaurants] = useState<any[]>([])
-    const [restaurantId, setRestaurantId] = useState("")
-    const [restaurantName, setRestaurantName] = useState("")
+    const [restaurantId, setRestaurantId] = useState(searchParams.get('vid') ?? "")
+    const [restaurantName, setRestaurantName] = useState(searchParams.get('venue') ?? "")
     const [bookDate, setBookDate] = useState<Dayjs | null>(null)
     const [bookTime, setBookTime] = useState("18:00")
     const [loading, setLoading] = useState(false)
