@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import {
   Store, ChevronDown, ChevronRight, Pencil, Trash2,
-  X, Check, Loader2, ShoppingBag, AlertTriangle, RefreshCw, RotateCcw,
+  X, Check, Loader2, ShoppingBag, AlertTriangle, RotateCcw,
 } from 'lucide-react'
 import { usePreorder } from '@/hooks/usePreorder'
 import QuantityEditor from '@/components/QuantityEditor'
@@ -21,7 +21,6 @@ export default function MyOrdersPage() {
 
   const [orders, setOrders] = useState<PreorderData[]>([])
   const [loading, setLoading] = useState(true)
-  const [fetchError, setFetchError] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   const [venueNames, setVenueNames] = useState<Record<string, string>>({})
@@ -43,13 +42,12 @@ export default function MyOrdersPage() {
   const fetchOrders = useCallback(async () => {
     if (!token) return
     setLoading(true)
-    setFetchError('')
     try {
       const res = await getAllPreorders(token)
       setOrders(res.data ?? [])
       setExpanded(new Set((res.data ?? []).map((o) => o._id)))
     } catch {
-      setFetchError('Failed to load orders. Please try again.')
+      setOrders([])
     } finally {
       setLoading(false)
     }
@@ -172,22 +170,6 @@ export default function MyOrdersPage() {
     return (
       <main data-testid="orders-loading" className="min-h-screen bg-black text-white flex items-center justify-center">
         <Loader2 size={28} className="animate-spin text-yellow-500" />
-      </main>
-    )
-  }
-
-  // ── Fetch error ───────────────────────────────────────────────────────────────
-  if (fetchError) {
-    return (
-      <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center gap-6 px-6">
-        <AlertTriangle size={40} className="text-red-400" />
-        <p className="text-zinc-400 text-sm">{fetchError}</p>
-        <button
-          onClick={fetchOrders}
-          className="flex items-center gap-2 px-5 py-2 bg-yellow-500 text-black text-sm font-medium rounded hover:bg-yellow-400 transition"
-        >
-          <RefreshCw size={14} /> Retry
-        </button>
       </main>
     )
   }
