@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { ChevronDown, Search, X } from 'lucide-react'
 import { sortRestaurants, SortOption } from '@/libs/searchUtils'
 import VenueCatalog from '@/components/VenueCatalog'
 import { VenueJson } from '@/../interface'
+import { getAllReviewsLocal } from '@/libs/reviewLocalDb'
 
 const SORT_OPTIONS: { label: string; value: SortOption }[] = [
   { label: 'Default',   value: '' },
@@ -17,9 +18,25 @@ const SORT_OPTIONS: { label: string; value: SortOption }[] = [
 export default function VenueSortClient({ venuesJson }: { venuesJson: VenueJson }) {
   const [sort, setSort] = useState<SortOption>('')
   const [query, setQuery] = useState('')
+  const [liveVenuesJson, setLiveVenuesJson] = useState(venuesJson)
+
+  // Merge localStorage reviews into venue rating/count on mount
+  useEffect(() => {
+    const reviews = getAllReviewsLocal()
+    const data = venuesJson.data.map((v) => {
+      const vr = reviews.filter((r) => {
+        const rid = typeof r.restaurant === 'string' ? r.restaurant : (r.restaurant as any)?._id
+        return rid === v._id
+      })
+      if (vr.length === 0) return v
+      const avg = (vr.reduce((s, r) => s + r.rating, 0) / vr.length).toFixed(1)
+      return { ...v, averageRating: avg, reviewCount: vr.length }
+    })
+    setLiveVenuesJson({ ...venuesJson, data })
+  }, [])
 
   const filteredSortedVenuesJson = useMemo((): VenueJson => {
-    let data = venuesJson.data as any[]
+    let data = liveVenuesJson.data as any[]
 
     // Filter by search query (name or address)
     if (query.trim()) {
@@ -32,7 +49,7 @@ export default function VenueSortClient({ venuesJson }: { venuesJson: VenueJson 
     // Sort
     if (sort) data = sortRestaurants(data as any, sort) as any[]
 
-    return { ...venuesJson, data: data as any }
+    return { ...liveVenuesJson, data: data as any }
   }, [venuesJson, sort, query])
 
   return (

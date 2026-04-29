@@ -11,6 +11,7 @@ import {
   SortOption,
 } from '@/libs/searchUtils'
 import { RestaurantItem } from '@/libs/getRestaurants'
+import { getAllReviewsLocal } from '@/libs/reviewLocalDb'
 
 const RECOMMENDED_THRESHOLD = 4.0
 const RECOMMENDED_MAX = 4
@@ -31,6 +32,7 @@ const RATING_OPTIONS = [
 ]
 
 export default function SearchClient({ initialRestaurants }: { initialRestaurants: RestaurantItem[] }) {
+  const [restaurants, setRestaurants] = useState(initialRestaurants)
   const [query,       setQuery]       = useState('')
   const [category,   setCategory]    = useState('')
   const [province,   setProvince]    = useState('')
@@ -39,17 +41,31 @@ export default function SearchClient({ initialRestaurants }: { initialRestaurant
   const [sort,       setSort]        = useState<SortOption>('')
   const [showFilter, setShowFilter]  = useState(false)
 
-  const categories = useMemo(() => extractCategories(initialRestaurants), [initialRestaurants])
-  const provinces  = useMemo(() => extractProvinces(initialRestaurants),  [initialRestaurants])
-  const districts  = useMemo(() => extractDistricts(initialRestaurants, province || undefined), [initialRestaurants, province])
+  // Merge localStorage reviews into rating/count on mount
+  useEffect(() => {
+    const reviews = getAllReviewsLocal()
+    setRestaurants(initialRestaurants.map((r) => {
+      const vr = reviews.filter((rv) => {
+        const rid = typeof rv.restaurant === 'string' ? rv.restaurant : (rv.restaurant as any)?._id
+        return rid === r._id
+      })
+      if (vr.length === 0) return r
+      const avg = (vr.reduce((s, rv) => s + rv.rating, 0) / vr.length).toFixed(1)
+      return { ...r, averageRating: avg, reviewCount: vr.length }
+    }))
+  }, [])
+
+  const categories = useMemo(() => extractCategories(restaurants), [restaurants])
+  const provinces  = useMemo(() => extractProvinces(restaurants),  [restaurants])
+  const districts  = useMemo(() => extractDistricts(restaurants, province || undefined), [restaurants, province])
 
   const filtered = useMemo(
-    () => applyFilters(initialRestaurants, { query, category, province, district, minRating, sort }),
-    [initialRestaurants, query, category, province, district, minRating, sort],
+    () => applyFilters(restaurants, { query, category, province, district, minRating, sort }),
+    [restaurants, query, category, province, district, minRating, sort],
   )
 
   const recommended = useMemo(() => {
-    return [...initialRestaurants]
+    return [...restaurants]
       .filter(r => parseFloat(String(r.averageRating)) >= RECOMMENDED_THRESHOLD)
       .sort((a, b) => parseFloat(String(b.averageRating)) - parseFloat(String(a.averageRating)))
       .slice(0, RECOMMENDED_MAX)
