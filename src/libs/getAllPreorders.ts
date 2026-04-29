@@ -1,6 +1,4 @@
-const API_URL = typeof window !== 'undefined'
-  ? ''
-  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/$/, '')
+const PREORDERS_KEY = 'nw_preorders'
 
 export interface PreorderItemData {
   menuId: string
@@ -17,53 +15,58 @@ export interface PreorderData {
   updatedAt: string
 }
 
-export async function getAllPreorders(token: string): Promise<{ success: boolean; data: PreorderData[] }> {
-  const res = await fetch(`${API_URL}/api/v1/preorders`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: 'no-store',
-  })
-  // treat any "no data" status as empty list
-  if (!res.ok) return { success: true, data: [] }
+function readPreorders(): PreorderData[] {
+  if (typeof window === 'undefined') return []
   try {
-    const json = await res.json()
-    return { ...json, data: json.data ?? [] }
-  } catch {
-    return { success: true, data: [] }
-  }
+    return JSON.parse(localStorage.getItem(PREORDERS_KEY) ?? '[]')
+  } catch { return [] }
 }
 
-export async function updatePreorderItemQty(venueId: string, menuId: string, quantity: number, token?: string): Promise<void> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  if (token) headers['Authorization'] = `Bearer ${token}`
-  const res = await fetch(`${API_URL}/api/v1/preorders/${venueId}/items/${menuId}`, {
-    method: 'PUT',
-    headers,
-    body: JSON.stringify({ quantity }),
-  })
-  if (!res.ok) throw new Error('Failed to update item')
+function writePreorders(orders: PreorderData[]): void {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(PREORDERS_KEY, JSON.stringify(orders))
 }
 
-export async function removePreorderItem(venueId: string, menuId: string, token?: string): Promise<void> {
-  const headers: Record<string, string> = {}
-  if (token) headers['Authorization'] = `Bearer ${token}`
-  const res = await fetch(`${API_URL}/api/v1/preorders/${venueId}/items/${menuId}`, {
-    method: 'DELETE',
-    headers,
-  })
-  if (!res.ok) throw new Error('Failed to remove item')
+export async function getAllPreorders(_token: string): Promise<{ success: boolean; data: PreorderData[] }> {
+  return { success: true, data: readPreorders() }
 }
 
 export async function confirmPreorder(
   venueId: string,
   items: { menuId: string; name: string; price: number; quantity: number }[],
-  token?: string
+  _token?: string
 ): Promise<void> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  if (token) headers['Authorization'] = `Bearer ${token}`
-  const res = await fetch(`${API_URL}/api/v1/preorders/${venueId}`, {
-    method: 'PATCH',
-    headers,
-    body: JSON.stringify({ items }),
-  })
-  if (!res.ok) throw new Error('Failed to confirm preorder')
+  const orders = readPreorders()
+  const total = items.reduce((s, i) => s + i.price * i.quantity, 0)
+  const idx = orders.findIndex((o) => o.venueId === venueId)
+  if (idx >= 0) {
+    orders[idx] = { ...orders[idx], items, total, updatedAt: new Date().toISOString() }
+  } else {
+    orders.push({ _id: `po-${Date.now()}`, venueId, items, total, updatedAt: new Date().toISOString() })
+  }
+  writePreorders(orders)
+}
+
+export async function updatePreorderItemQty(venueId: string, menuId: string, quantity: number, _token?: string): Promise<void> {
+  const orders = readPreorders()
+  const order = orders.find((o) => o.venueId === venueId)
+  if (!order) return
+  const item = order.items.find((i) => i.menuId === menuId)
+  if (!item) return
+  item.quantity = quantity
+  order.total = order.items.reduce((s, i) => s + i.price * i.quantity, 0)
+  writePreorders(orders)
+}
+
+export async function removePreorderItem(venueId: string, menuId: string, _token?: string): Promise<void> {
+  const orders = readPreorders()
+  const order = orders.find((o) => o.venueId === venueId)
+  if (!order) return
+  order.items = order.items.filter((i) => i.menuId !== menuId)
+  if (order.items.length === 0) {
+    writePreorders(orders.filter((o) => o.venueId !== venueId))
+  } else {
+    order.total = order.items.reduce((s, i) => s + i.price * i.quantity, 0)
+    writePreorders(orders)
+  }
 }
