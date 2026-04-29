@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -20,28 +20,8 @@ const restaurantIcon = new L.Icon({
   shadowSize: [41, 41],
 })
 
-const userIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-})
-
-function RecenterMap({ center }: { center: [number, number] }) {
-  const map = useMap()
-  useEffect(() => {
-    map.setView(center, map.getZoom())
-  }, [center, map])
-  return null
-}
-
 export default function RestaurantMap() {
   const [restaurants, setRestaurants] = useState<RestaurantPin[]>([])
-  const [userPos, setUserPos] = useState<[number, number] | null>(null)
-  const [center, setCenter] = useState<[number, number]>(DEFAULT_CENTER)
-  const [geoError, setGeoError] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -65,32 +45,12 @@ export default function RestaurantMap() {
       .finally(() => setLoading(false))
   }, [])
 
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      setGeoError('Geolocation is not supported by your browser.')
-      return
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const coords: [number, number] = [pos.coords.latitude, pos.coords.longitude]
-        setUserPos(coords)
-        setCenter(coords)
-      },
-      () => setGeoError('Location access denied. Showing Bangkok by default.')
-    )
-  }, [])
-
   const pins = filterPinsWithCoords(restaurants)
 
   return (
     <div className="relative">
-      {geoError && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-black/80 border border-yellow-600/30 text-yellow-400 text-xs px-4 py-2 rounded shadow">
-          {geoError}
-        </div>
-      )}
       <MapContainer
-        center={center}
+        center={DEFAULT_CENTER}
         zoom={13}
         style={{ height: '500px', width: '100%', background: '#0a0a0a' }}
         className="z-0"
@@ -99,18 +59,6 @@ export default function RestaurantMap() {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-
-        <RecenterMap center={center} />
-
-        {userPos && (
-          <Marker position={userPos} icon={userIcon}>
-            <Popup>
-              <div style={{ fontFamily: 'sans-serif', fontSize: '12px' }}>
-                <strong>Your Location</strong>
-              </div>
-            </Popup>
-          </Marker>
-        )}
 
         {pins.map((r) => (
           <Marker

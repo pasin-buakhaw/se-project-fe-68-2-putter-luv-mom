@@ -4,13 +4,16 @@ import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import {
   Search, X, Star, MapPin, Phone, Clock,
-  BookOpen, SlidersHorizontal, ChevronDown, Navigation,
+  BookOpen, SlidersHorizontal, ChevronDown,
 } from 'lucide-react'
 import {
   applyFilters, extractCategories, extractProvinces, extractDistricts,
-  SortOption, DistanceOption,
+  SortOption,
 } from '@/libs/searchUtils'
 import { RestaurantItem } from '@/libs/getRestaurants'
+
+const RECOMMENDED_THRESHOLD = 4.0
+const RECOMMENDED_MAX = 4
 
 const SORT_OPTIONS: { label: string; value: SortOption }[] = [
   { label: 'Default',    value: '' },
@@ -27,14 +30,6 @@ const RATING_OPTIONS = [
   { label: '2★ & up', value: '2' },
 ]
 
-const DISTANCE_OPTIONS: { label: string; value: DistanceOption }[] = [
-  { label: 'Any',    value: '' },
-  { label: '< 500m', value: '500' },
-  { label: '< 1km',  value: '1000' },
-  { label: '< 5km',  value: '5000' },
-  { label: '< 10km', value: '10000' },
-]
-
 export default function SearchClient({ initialRestaurants }: { initialRestaurants: RestaurantItem[] }) {
   const [query,       setQuery]       = useState('')
   const [category,   setCategory]    = useState('')
@@ -42,10 +37,6 @@ export default function SearchClient({ initialRestaurants }: { initialRestaurant
   const [district,   setDistrict]    = useState('')
   const [minRating,  setMinRating]   = useState('')
   const [sort,       setSort]        = useState<SortOption>('')
-  const [maxDistance, setMaxDistance] = useState<DistanceOption>('')
-  const [userLat,    setUserLat]     = useState<number | undefined>()
-  const [userLng,    setUserLng]     = useState<number | undefined>()
-  const [locating,   setLocating]    = useState(false)
   const [showFilter, setShowFilter]  = useState(false)
 
   const categories = useMemo(() => extractCategories(initialRestaurants), [initialRestaurants])
@@ -53,25 +44,21 @@ export default function SearchClient({ initialRestaurants }: { initialRestaurant
   const districts  = useMemo(() => extractDistricts(initialRestaurants, province || undefined), [initialRestaurants, province])
 
   const filtered = useMemo(
-    () => applyFilters(initialRestaurants, { query, category, province, district, minRating, sort, maxDistance, userLat, userLng }),
-    [initialRestaurants, query, category, province, district, minRating, sort, maxDistance, userLat, userLng],
+    () => applyFilters(initialRestaurants, { query, category, province, district, minRating, sort }),
+    [initialRestaurants, query, category, province, district, minRating, sort],
   )
+
+  const recommended = useMemo(() => {
+    return [...initialRestaurants]
+      .filter(r => parseFloat(String(r.averageRating)) >= RECOMMENDED_THRESHOLD)
+      .sort((a, b) => parseFloat(String(b.averageRating)) - parseFloat(String(a.averageRating)))
+      .slice(0, RECOMMENDED_MAX)
+  }, [initialRestaurants])
+
+  const isFiltering = !!(query || category || province || district || minRating || sort)
 
   // Reset district when province changes
   useEffect(() => { setDistrict('') }, [province])
-
-  function requestLocation() {
-    if (!navigator.geolocation) return
-    setLocating(true)
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setUserLat(pos.coords.latitude)
-        setUserLng(pos.coords.longitude)
-        setLocating(false)
-      },
-      () => setLocating(false)
-    )
-  }
 
   const activeFilters: { label: string; onRemove: () => void }[] = []
   if (query)       activeFilters.push({ label: `"${query}"`,         onRemove: () => setQuery('') })
@@ -79,14 +66,13 @@ export default function SearchClient({ initialRestaurants }: { initialRestaurant
   if (province)    activeFilters.push({ label: `📍 ${province}`,    onRemove: () => { setProvince(''); setDistrict('') } })
   if (district)    activeFilters.push({ label: `🏘 ${district}`,    onRemove: () => setDistrict('') })
   if (minRating)   activeFilters.push({ label: `${minRating}★+`,    onRemove: () => setMinRating('') })
-  if (maxDistance) activeFilters.push({ label: DISTANCE_OPTIONS.find(d => d.value === maxDistance)!.label, onRemove: () => setMaxDistance('') })
   if (sort)        activeFilters.push({ label: SORT_OPTIONS.find(s => s.value === sort)!.label, onRemove: () => setSort('') })
 
-  const filterCount = [category, province, district, minRating, maxDistance].filter(Boolean).length
+  const filterCount = [category, province, district, minRating].filter(Boolean).length
 
   function clearAll() {
     setQuery(''); setCategory(''); setProvince(''); setDistrict('')
-    setMinRating(''); setSort(''); setMaxDistance('')
+    setMinRating(''); setSort('')
   }
 
   return (
@@ -109,11 +95,84 @@ export default function SearchClient({ initialRestaurants }: { initialRestaurant
           </p>
         </div>
 
+        {/* ── Recommended ────────────────────────────────────────── */}
+        {!isFiltering && recommended.length > 0 && (
+          <div data-testid="recommended-section" className="mb-12">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex-1 h-px bg-yellow-600/15" />
+              <div className="text-center">
+                <p className="text-yellow-500 text-xs tracking-[0.35em] uppercase">Top Picks</p>
+                <h2 className="font-playfair text-xl font-bold text-white tracking-widest mt-0.5">
+                  Recommended
+                </h2>
+              </div>
+              <div className="flex-1 h-px bg-yellow-600/15" />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {recommended.map((r, i) => {
+                const ratingNum = parseFloat(String(r.averageRating))
+                return (
+                  <div
+                    key={r._id}
+                    data-testid="recommended-card"
+                    data-rating={parseFloat(String(r.averageRating))}
+                    className="group relative bg-[#0f0f0f] border border-yellow-600/15
+                               hover:border-yellow-500/50 hover:bg-[#141414]
+                               transition-all duration-300 p-5 flex flex-col gap-3"
+                  >
+                    <div className="absolute top-3 right-3 w-6 h-6 bg-yellow-500 flex items-center justify-center">
+                      <span className="text-black text-xs font-bold">#{i + 1}</span>
+                    </div>
+
+                    <Link href={`/venue/${r._id}`} className="pr-8">
+                      <h3 className="font-playfair text-base text-yellow-500 font-bold leading-snug
+                                     hover:text-yellow-400 transition line-clamp-2">
+                        {r.name}
+                      </h3>
+                    </Link>
+
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map(s => (
+                          <Star
+                            key={s}
+                            size={11}
+                            className={ratingNum >= s ? 'text-yellow-400 fill-yellow-400' : 'text-gray-700'}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-yellow-400 text-xs font-medium">{ratingNum.toFixed(1)}</span>
+                      <span className="text-gray-700 text-xs">({r.reviewCount})</span>
+                    </div>
+
+                    <div className="flex items-start gap-1.5 flex-1">
+                      <MapPin size={11} className="text-yellow-600/40 mt-0.5 shrink-0" />
+                      <p className="text-gray-500 text-xs leading-relaxed line-clamp-2">{r.address}</p>
+                    </div>
+
+                    <Link
+                      href={`/menu?venueId=${r._id}&venueName=${encodeURIComponent(r.name)}`}
+                      className="flex items-center justify-center gap-1.5 text-xs py-1.5
+                                 text-black bg-yellow-500 hover:bg-yellow-400 transition-all duration-200"
+                    >
+                      <BookOpen size={11} /> View Menu
+                    </Link>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="h-px bg-yellow-600/10 mt-10" />
+          </div>
+        )}
+
         {/* ── Search bar + controls ───────────────────────────────── */}
         <div className="flex gap-3 mb-4">
           <div className="relative flex-1">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-yellow-500/50" />
             <input
+              data-testid="search-input"
               type="text"
               value={query}
               onChange={e => setQuery(e.target.value)}
@@ -129,6 +188,7 @@ export default function SearchClient({ initialRestaurants }: { initialRestaurant
           </div>
 
           <button
+            data-testid="filter-toggle-btn"
             onClick={() => setShowFilter(f => !f)}
             className={`flex items-center gap-2 px-4 py-3 border text-sm transition ${
               showFilter || filterCount > 0
@@ -145,6 +205,7 @@ export default function SearchClient({ initialRestaurants }: { initialRestaurant
 
           <div className="relative">
             <select
+              data-testid="sort-select"
               value={sort}
               onChange={e => setSort(e.target.value as SortOption)}
               className="appearance-none pl-3 pr-8 py-3 bg-[#0f0f0f] border border-yellow-600/20
@@ -160,7 +221,7 @@ export default function SearchClient({ initialRestaurants }: { initialRestaurant
 
         {/* ── Filter panel ────────────────────────────────────────── */}
         {showFilter && (
-          <div className="mb-4 p-5 bg-[#0f0f0f] border border-yellow-600/15 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div data-testid="filter-panel" className="mb-4 p-5 bg-[#0f0f0f] border border-yellow-600/15 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
             {/* Category */}
             <div>
@@ -168,7 +229,7 @@ export default function SearchClient({ initialRestaurants }: { initialRestaurant
               <div className="flex flex-wrap gap-2">
                 <FilterChip active={!category} onClick={() => setCategory('')} label="ทั้งหมด" />
                 {categories.map(c => (
-                  <FilterChip key={c} active={category === c} onClick={() => setCategory(category === c ? '' : c)} label={c} />
+                  <FilterChip key={c} testId="category-chip" active={category === c} onClick={() => setCategory(category === c ? '' : c)} label={c} />
                 ))}
               </div>
             </div>
@@ -197,49 +258,13 @@ export default function SearchClient({ initialRestaurants }: { initialRestaurant
               )}
             </div>
 
-            {/* Rating + Distance */}
-            <div className="flex flex-col gap-4">
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-widest mb-3">Minimum Rating</p>
-                <div className="flex flex-wrap gap-2">
-                  {RATING_OPTIONS.map(o => (
-                    <FilterChip key={o.value} active={minRating === o.value} onClick={() => setMinRating(minRating === o.value ? '' : o.value)} label={o.label} />
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <p className="text-xs text-gray-500 uppercase tracking-widest">ระยะทาง</p>
-                  {!userLat && (
-                    <button
-                      onClick={requestLocation}
-                      disabled={locating}
-                      className="flex items-center gap-1 text-xs text-yellow-500 border border-yellow-500/30 px-2 py-0.5 hover:bg-yellow-500/10 transition"
-                    >
-                      <Navigation size={10} />
-                      {locating ? 'กำลังหา…' : 'ใช้ตำแหน่งของฉัน'}
-                    </button>
-                  )}
-                  {userLat && <span className="text-xs text-green-500">📍 พบตำแหน่ง</span>}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {DISTANCE_OPTIONS.map(o => (
-                    <FilterChip
-                      key={o.value}
-                      active={maxDistance === o.value}
-                      onClick={() => {
-                        if (o.value && !userLat) requestLocation()
-                        setMaxDistance(maxDistance === o.value ? '' : o.value)
-                      }}
-                      label={o.label}
-                      disabled={!!o.value && !userLat}
-                    />
-                  ))}
-                </div>
-                {!userLat && maxDistance && (
-                  <p className="text-xs text-yellow-600 mt-2">กรุณาอนุญาตการเข้าถึงตำแหน่งก่อน</p>
-                )}
+            {/* Rating */}
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-widest mb-3">Minimum Rating</p>
+              <div className="flex flex-wrap gap-2">
+                {RATING_OPTIONS.map(o => (
+                  <FilterChip key={o.value} active={minRating === o.value} onClick={() => setMinRating(minRating === o.value ? '' : o.value)} label={o.label} />
+                ))}
               </div>
             </div>
           </div>
@@ -247,7 +272,7 @@ export default function SearchClient({ initialRestaurants }: { initialRestaurant
 
         {/* ── Active filter chips ─────────────────────────────────── */}
         {activeFilters.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 mb-6">
+          <div data-testid="active-filters-bar" className="flex flex-wrap items-center gap-2 mb-6">
             <span className="text-xs text-gray-600 uppercase tracking-widest">Active:</span>
             {activeFilters.map((f, i) => (
               <button
@@ -266,13 +291,13 @@ export default function SearchClient({ initialRestaurants }: { initialRestaurant
         )}
 
         {/* ── Result count ────────────────────────────────────────── */}
-        <p className="text-gray-600 text-xs uppercase tracking-widest mb-6">
+        <p data-testid="result-count" className="text-gray-600 text-xs uppercase tracking-widest mb-6">
           {filtered.length} restaurant{filtered.length !== 1 ? 's' : ''} found
         </p>
 
         {/* ── Results ─────────────────────────────────────────────── */}
         {filtered.length === 0 ? (
-          <div className="py-20 text-center">
+          <div data-testid="no-results" className="py-20 text-center">
             <p className="font-playfair text-2xl text-yellow-600/30 mb-3">No results found</p>
             <p className="text-gray-600 text-sm mb-6">Try adjusting your search or removing some filters.</p>
             <button
@@ -284,7 +309,7 @@ export default function SearchClient({ initialRestaurants }: { initialRestaurant
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filtered.map(r => <RestaurantCard key={r._id} r={r} userLat={userLat} userLng={userLng} />)}
+            {filtered.map(r => <RestaurantCard key={r._id} r={r} />)}
           </div>
         )}
       </div>
@@ -295,12 +320,14 @@ export default function SearchClient({ initialRestaurants }: { initialRestaurant
 // ── Sub-components ─────────────────────────────────────────────────────────
 
 function FilterChip({
-  label, active, onClick, disabled = false,
-}: { label: string; active: boolean; onClick: () => void; disabled?: boolean }) {
+  label, active, onClick, disabled = false, testId,
+}: { label: string; active: boolean; onClick: () => void; disabled?: boolean; testId?: string }) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
+      data-testid={testId}
+      data-active={active ? 'true' : 'false'}
       className={`px-3 py-1 text-xs border transition ${
         active
           ? 'bg-yellow-500 text-black border-yellow-500'
@@ -314,28 +341,12 @@ function FilterChip({
   )
 }
 
-function haversineMetres(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371000
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLng = ((lng2 - lng1) * Math.PI) / 180
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
-
-function RestaurantCard({ r, userLat, userLng }: { r: RestaurantItem; userLat?: number; userLng?: number }) {
+function RestaurantCard({ r }: { r: RestaurantItem }) {
   const ratingNum = parseFloat(String(r.averageRating))
   const hasRating = !isNaN(ratingNum)
 
-  const distanceText = useMemo(() => {
-    if (userLat == null || userLng == null || r.lat == null || r.lng == null) return null
-    const m = haversineMetres(userLat, userLng, r.lat, r.lng)
-    return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`
-  }, [userLat, userLng, r.lat, r.lng])
-
   return (
-    <div className="group bg-[#0f0f0f] border border-yellow-600/15 hover:border-yellow-500/50
+    <div data-testid="restaurant-card" className="group bg-[#0f0f0f] border border-yellow-600/15 hover:border-yellow-500/50
                     hover:bg-[#141414] transition-all duration-300 p-6 flex flex-col gap-4">
       <div className="flex justify-between items-start">
         <Link href={`/venue/${r._id}`} className="flex-1 pr-2">
@@ -346,16 +357,9 @@ function RestaurantCard({ r, userLat, userLng }: { r: RestaurantItem; userLat?: 
             <span className="text-xs text-yellow-600/50 uppercase tracking-wider">{r.category}</span>
           )}
         </Link>
-        <div className="flex flex-col items-end gap-1">
-          <div className="flex items-center gap-1 bg-yellow-500/10 border border-yellow-500/20 px-2 py-1">
-            <Star size={10} className="text-yellow-400 fill-yellow-400" />
-            <span className="text-yellow-400 text-xs font-medium">{hasRating ? ratingNum.toFixed(1) : '—'}</span>
-          </div>
-          {distanceText && (
-            <span className="text-xs text-green-500/80 flex items-center gap-1">
-              <Navigation size={9} /> {distanceText}
-            </span>
-          )}
+        <div className="flex items-center gap-1 bg-yellow-500/10 border border-yellow-500/20 px-2 py-1 self-start">
+          <Star size={10} className="text-yellow-400 fill-yellow-400" />
+          <span className="text-yellow-400 text-xs font-medium">{hasRating ? ratingNum.toFixed(1) : '—'}</span>
         </div>
       </div>
 
