@@ -35,7 +35,7 @@ export default function BookingList() {
     const fetchBookings = async () => {
         try {
             const data = await getReservations(token)
-            setBookings(data.data)
+            setBookings(data.data ?? [])
         } catch (err) {
             console.error(err)
         } finally {
@@ -60,8 +60,7 @@ export default function BookingList() {
     const handleSave = async (id: string) => {
         if (!editDate) return
         try {
-            const dateTimeStr = `${dayjs(editDate).format("YYYY-MM-DD")}T${editTime}:00.000Z`
-            await updateReservation(id, dateTimeStr, editTime, token)
+            await updateReservation(id, dayjs(editDate).format("YYYY-MM-DD"), editTime, token)
             setEditingId(null)
             fetchBookings()
         } catch (err: any) {

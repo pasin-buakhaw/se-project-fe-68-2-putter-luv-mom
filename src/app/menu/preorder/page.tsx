@@ -30,6 +30,10 @@ export default function PreorderPage() {
 
   async function handleConfirm() {
     if (items.length === 0) return
+    if (!token) {
+      setError('You must be signed in to confirm an order')
+      return
+    }
     setConfirming(true)
     setError('')
     try {
@@ -84,7 +88,7 @@ export default function PreorderPage() {
               </div>
               <button
                 onClick={handleConfirm}
-                disabled={confirming}
+                disabled={confirming || !token}
                 className="flex items-center gap-2 px-6 py-2 bg-yellow-500 text-black font-medium rounded hover:bg-yellow-400 transition disabled:opacity-60"
               >
                 {confirming
