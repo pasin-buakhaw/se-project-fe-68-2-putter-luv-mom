@@ -50,7 +50,7 @@ export default function VenueSortClient({ venuesJson }: { venuesJson: VenueJson 
     if (sort) data = sortRestaurants(data as any, sort) as any[]
 
     return { ...liveVenuesJson, data: data as any }
-  }, [venuesJson, sort, query])
+  }, [liveVenuesJson, sort, query])
 
   return (
     <div>
