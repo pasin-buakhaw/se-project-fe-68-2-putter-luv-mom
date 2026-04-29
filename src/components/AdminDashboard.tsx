@@ -18,6 +18,7 @@ import updateReservation from '@/libs/updateReservation'
 import deleteReservation from '@/libs/deleteReservation'
 import DateReserve from '@/components/DateReserve'
 import { getAllPreorders, updatePreorderItemQty, removePreorderItem, PreorderData } from '@/libs/getAllPreorders'
+import { deleteReviewLocal, updateReviewLocal } from '@/libs/reviewLocalDb'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1074,14 +1075,10 @@ function ReviewsSection({ token }: { token: string }) {
     setExpanded((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next })
   }
 
-  async function handleDelete() {
+  function handleDelete() {
     if (!deleteTarget) return
     try {
-      const res = await fetch(`/api/v1/reviews/${deleteTarget._id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed to delete review')
+      deleteReviewLocal(deleteTarget._id)
       setReviews((prev) => prev.filter((r) => r._id !== deleteTarget._id))
       showToast('Review deleted')
       setDeleteTarget(null)
@@ -1092,14 +1089,7 @@ function ReviewsSection({ token }: { token: string }) {
     if (!editTarget) return
     setSaving(true)
     try {
-      const res = await fetch(`/api/v1/reviews/${editTarget._id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ rating: editForm.rating, description: editForm.description }),
-      })
-      if (!res.ok) throw new Error('Failed to update review')
-      const json = await res.json()
-      const updated: ReviewItem = json.data
+      const updated = updateReviewLocal(editTarget._id, editForm.rating, editForm.description)
       setReviews((prev) => prev.map((r) => r._id === editTarget._id ? { ...r, rating: updated.rating, description: updated.description } : r))
       showToast('Review updated')
       setEditTarget(null)
