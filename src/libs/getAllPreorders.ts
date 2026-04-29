@@ -22,8 +22,12 @@ export async function getAllPreorders(token: string): Promise<{ success: boolean
     headers: { Authorization: `Bearer ${token}` },
     cache: 'no-store',
   })
-  if (!res.ok) throw new Error('Failed to fetch preorders')
-  return res.json()
+  // 404 = user has no preorders yet — return empty list instead of throwing
+  if (res.status === 404) return { success: true, data: [] }
+  if (!res.ok) throw new Error(`Failed to fetch preorders (${res.status})`)
+  const json = await res.json()
+  // Normalise: backend may return data as null or omit it entirely
+  return { ...json, data: json.data ?? [] }
 }
 
 export async function updatePreorderItemQty(venueId: string, menuId: string, quantity: number, token?: string): Promise<void> {

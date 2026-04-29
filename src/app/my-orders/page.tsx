@@ -56,9 +56,11 @@ export default function MyOrdersPage() {
   }, [token])
 
   useEffect(() => {
-    if (status === 'authenticated') fetchOrders()
+    if (status === 'authenticated' && token) fetchOrders()
+    // stop spinner once session resolves without a token
+    if (status === 'authenticated' && !token) setLoading(false)
     if (status === 'unauthenticated') setLoading(false)
-  }, [status, fetchOrders])
+  }, [status, token, fetchOrders])
 
   useEffect(() => {
     fetch('/api/v1/restaurants')
