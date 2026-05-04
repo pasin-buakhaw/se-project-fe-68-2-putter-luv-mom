@@ -24,7 +24,7 @@ export async function getAllPreorders(token: string, role?: string): Promise<{ s
   if (res.status === 404) return { success: true, data: [] }
   if (!res.ok) throw new Error(`Failed to fetch preorders (${res.status})`)
   const json = await res.json()
-  const list = (json.data ?? []) as Array<{ _id?: string; venueId?: string; items?: PreorderItemData[]; total?: number; updatedAt?: string }>
+  const list = (Array.isArray(json.data) ? json.data : []) as Array<{ _id?: string; venueId?: string; items?: PreorderItemData[]; total?: number; updatedAt?: string }>
   const data: PreorderData[] = list
     .filter(o => Array.isArray(o.items) && o.items.length > 0 && typeof o.venueId === 'string')
     .map(o => ({
